@@ -1,40 +1,37 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=5157
 
-Description:
-VIM-TREEMAP is a vim script to create a treemap from a character seperated input file. The output could be a text file or a html file with imbedded SVG.
+Getting Started
+********************
+With the treemap extension plugin for vim you can create treemaps with the
+output in a text file or an imbedded SVG HTML file.
 
-How to use:
-When you have the files from Github:
-Copy the folders 'autoload', 'doc' and 'plugin' to your local vimfiles:
-~/.vim/doc
-OR (Windows)
-C:\Users\YourUsername\vimfiles\doc
+For further details read the vim help file:  ~/doc/treemap.txt
 
-When you have a VIMBALL (vim.org):
-Install the vimball with VIM
-1 Download the file treemap.vmb
-2 vim path/treemap.vmb
-3 :so %
-4 :q
+First install the plugin: |treemap-install| (Vim help file)
 
-Then you can use the menu 'Plugin -> Treemap' after startin a new vim window
+To start the treemap creation:
+- load the inputfile
+- set the separator (;|,|\t|...) in the menu Plugin->Treemap->Separator
+- set the output type 'VIM' or 'SVG' in the menu Plugin->Treemap->Output Type
+- Run the treemap script in the menu Plugin->Treemap->Run    OR
+  call the main function: call treemap#main(output,separator)
+  for example: call treemap('VIM','\t')
 
-When you want only test the script, do the following:
+Warning: The decimal separator for the input file is in every language the point "."
+         examples:   23.1
+                        1020.23
 
-open the input file in vim
-load the script in command mode with ':so PFAD/treemap.vim' (example - :so C:\treemap\treemap.vim)
-run the method treemap#main(output,separator) in commandLine with ":call treemap#main('VIM',';')" or "treemap#main('SVG','\t')"
-output:
-Use 'VIM': the treemap is created in a new tab with the signs '-', '|' and '+'
-Use 'SVG': the treemap is discripted in a new tab in SVG. The SVG is imbedded in a HTML file.
-
-separator:
-Use ';' for semicolon separated data
-Use '\t' for tab separated data
-Use any other character for other separators
-
-see also the readme.md file at Github Repository VIM-TREEMAP:
-https://github.com/Data-Statiker/VIM-TREEMAP
-
-VIM Help:
-call ":help treemap" in VIM
+Whats New						
+*****************
+Version 0.8:
+*	Introduce the global variables g:ux and g:uy to set the size from the
+	treemap. So the size of the treemap could be changed throug the variables:
+	g:ux = width
+	g:uy = height
+*	Adapt the menu to set the height and width of the treemap
+*	Adapt the menu for printing the log variable g:mess
+*	Update VIM help file treemap.txt
+*	For some parameters in the function treemap#initialize()
+  	Only set the variables when they do not exist
+*	New function treemap#checkChildParentRelation(matrix,val2Active)
+  	Check if every unit has only one parent
