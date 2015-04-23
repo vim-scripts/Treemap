@@ -7,31 +7,34 @@ output in a text file or an imbedded SVG HTML file.
 
 For further details read the vim help file:  ~/doc/treemap.txt
 
-First install the plugin: |treemap-install| (Vim help file)
+First install the plugin: |treemap-install|
 
 To start the treemap creation:
 - load the inputfile
 - set the separator (;|,|\t|...) in the menu Plugin->Treemap->Separator
+  or set the variable: g:tmSeperator
 - set the output type 'VIM' or 'SVG' in the menu Plugin->Treemap->Output Type
+  or set the variable: g:tmOutput
 - Run the treemap script in the menu Plugin->Treemap->Run    OR
   call the main function: call treemap#main(output,separator)
-  for example: call treemap('VIM','\t')
+  for example: - call treemap#main('VIM','\t')
+                     - call treemap#main(g:tmOutput,g:tmSeparator)
 
-Warning: The decimal separator for the input file is in every language the point "."
-         examples:   23.1
-                        1020.23
+
+Warning:
+The decimal separator for the input file is in
+every language the point "."
+examples:   23.1
+               1020.23
+
+If you get an error message you can find help for this error in the help file. Type :help ERROR-ID.
+example: :help E0003
 
 Whats New						
 *****************
-Version 0.8:
-*	Introduce the global variables g:ux and g:uy to set the size from the
-	treemap. So the size of the treemap could be changed throug the variables:
-	g:ux = width
-	g:uy = height
-*	Adapt the menu to set the height and width of the treemap
-*	Adapt the menu for printing the log variable g:mess
-*	Update VIM help file treemap.txt
-*	For some parameters in the function treemap#initialize()
-  	Only set the variables when they do not exist
-*	New function treemap#checkChildParentRelation(matrix,val2Active)
-  	Check if every unit has only one parent
+Version 0.9:
+*	Title for the treemap
+*	Initialize g:tmMess / no error occurs by starting "print log"
+*	Namespace for treemap global variables: g:tm*
+	To avoid incompatibility to other plugins
+*	Small changes in the help file
