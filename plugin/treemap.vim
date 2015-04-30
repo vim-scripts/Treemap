@@ -1,64 +1,76 @@
+"  vim:tabstop=2:shiftwidth=2:expandtab:foldmethod=marker:textwidth=79
 "  treemap.vim: (plugin) Creates a treemap in a new tab
-"  Last Change: Wed Apr 23 6:45 PM 2015 MET
-"  Author:	Data-Statiker
+"  Last Change: Thu Apr 30 7:45 PM 2015 MET
+"  Author:	    Data-Statiker
 "  Maintainer:  Data-Statiker
-"  Version:     0.9, for Vim 7.4+
+"  Version:     0.9.2, for Vim 7.4+
 
-"  New:
-"  Version 0.9
+"  New: {{{1
+"  Version 0.9.2:
+"  *	New Commands TmCreate and TmDraw
+"     To seperate the calculating and drawing of treemap
+"  *  Create folders in plugin files for a clear view
+"
+"  Version 0.9.1:
+"  *	Add corresponding VIM COMMANDS for each menu entry
+"  *	Add Mappings for VIM Commands:
+"  *	Set the default width and height in case of Output Type 'VIM'
+"     to 70*25
+"
+"  Version 0.9:
 "  *	Title for the treemap
 "  *	Initialize g:tmMess / no error occurs by starting "print log"
 "  *	Namespace for treemap global variables: g:tm*
-"  	To avoid incompatibility to other plugins
+"  	  To avoid incompatibility to other plugins
 "  *	Small changes in the help file
 "
 "  Version 0.8:
 "  *	Introduce the global variables g:tmUx and g:tmUy to set the size from the
-"	treemap. So the size of the treemap could be changed throug the variables:
-"	g:tmUx = width
-"	g:tmUy = height
+"	    treemap. So the size of the treemap could be changed throug the variables:
+"	    g:tmUx = width
+"	    g:tmUy = height
 "  *	Adapt the menu to set the height and width of the treemap
 "  *	Adapt the menu for printing the log variable g:tmMess
 "  *	Update VIM help file
 "  *	For some parameters in the function treemap#initialize()
-"  	Only set the variables when they do not exist
+"  	  Only set the variables when they do not exist
 "  *	New function treemap#checkChildParentRelation(matrix,val2Active)
-"  	Check if every unit has only one parent
+"  	  Check if every unit has only one parent
 "
 "  Version 0.7:
 "  *	In version 0.7 the output paramater is created for the function
-"  	treemap#main(). The paramater output could have the values "VIM" or
-"  	"SVG".
-"  	VIM: Rectangles are created in a new tab with the signs "-", "|" and "+" 
-"  	SVG: Rectangles are descripted in a SVG structure imbedded in a html
-"  	file 
+"  	  treemap#main(). The paramater output could have the values "VIM" or
+"  	  "SVG".
+"  	   VIM: Rectangles are created in a new tab with the signs "-", "|" and "+" 
+"  	   SVG: Rectangles are descripted in a SVG structure imbedded in a html
+"  	        file 
 "  *	New function treemap#initialize for initializing global variables
 "  *	New parameter separator for the method treemap#main(). So the input
-"  	file could be separated by ";" or "\t" (tab) or any other signs. The values
-"  	of these parameter are for example:
-"  	;	for semicolon separated files
-"  	\t	for tabulator separated files
-"  	Examples: :call treemap#main('VIM',';')
+"  	  file could be separated by ";" or "\t" (tab) or any other signs. The values
+"  	  of these parameter are for example:
+"  	    ;	for semicolon separated files
+"  	   \t	for tabulator separated files
+"  	  Examples: :call treemap#main('VIM',';')
 "  		  :call treemap#main('SVG','\t')
 "  *	Insert 'throw "oops"' in treemap#interruptRun() so the program stops
-"	in case of error	
+"	    in case of error	
 "  *	Create the menu "Plugin - Treemap" tor run the script and set the
-"	variables g:tmSeparator, g:tmOutput, g:tmColor
+"	    variables g:tmSeparator, g:tmOutput, g:tmColor
 "
 "  Version 0.6:
 "  *	Delete not used functions "treemap#reorgHierachy" and "treemap#reorgHierachy2" with
-"  	all sub functions
+"  	  all sub functions
 "  *	Rename function "treemap#reorgHierachy3" to "treemap#reorgHierachy"
 "  *	Add a second value column. This value is represented in the treemap through
-"  	colors (Heat Map). Only SVG-Output. If ther is no val 2 column, the layer 1
-"  	entries define the color of their childs
+"  	  colors (Heat Map). Only SVG-Output. If ther is no val 2 column, the layer 1
+"  	  entries define the color of their childs
 "  
 "  Version 0.5:
 "  *	In version 0.5 the recursive function "treemap#reorgHierachy2" is substitute
-"  	through the iterative function "treemap#reorgHierachy3"
+"  	  through the iterative function "treemap#reorgHierachy3"
 "  *	SVG-Output with fill color
 
-" Variable Definition
+" Variable Definition {{{1
 " fill colors for Rectangles
 :let g:tmColor = ['blue','grey','red']
 
@@ -79,7 +91,7 @@
 	":let g:tmY = 65
 	":let g:tmX = 1024
 	":let g:tmY = 768
-	":let g:pt = g:tmX * g:tmY
+	":let g:tmPt = g:tmX * g:tmY
 
 	" val2 average and interval values / is val2 active or not
 	:let g:tmVal2Active = "false"
@@ -93,6 +105,7 @@
 
 	" number of layers
 	:let g:tmLNr = 0
+  :let g:tmLayNrs = []
 
 	" actual tabpage
 	" :let g:tmTabMain = tabpagenr()
@@ -110,6 +123,14 @@
 		:let g:tmTitle = "Treemap"
 	:endif
 
+  " Clipboard variables
+	:if !exists("g:tmClipboard")
+		:let g:tmClipboard = []
+	:endif
+	:if !exists("g:tmClipSize")
+    :let g:tmClipSize = {}
+  :endif
+
 	" list for warnings and errors
 	:let g:tmMess = []
 	:let g:tmErr = 0
@@ -126,6 +147,10 @@
 	:let g:tmE0004["EN"] = "|E|E0004|Frame is too small"
 	:let g:tmE0005 = {"T":"E","O":"A","DE":"|E|E0005|Jede Einheit darf nur einer übergeordneten Einheit zugeordnet sein"}
 	:let g:tmE0005["EN"] = "|E|E0005|Every unit must have only one parent"
+ 	:let g:tmE0006 = {"T":"E","O":"A","DE":"|E|E0006|Für diese Funktion (TmCreate) muss ein Bereich markiert sein"}
+ 	:let g:tmE0006["EN"] = "|E|E0006|This function need a marked area"
+  :let g:tmE0007 = {"T":"E","O":"A","DE":"|E|E0007|Es sind keine Daten im Zwischenspeicher zum zeichnen vorhanden"}
+ 	:let g:tmE0007["EN"] = "|E|E0007|There are no data to draw in the clipboard"
 	" Warnings
 	:let g:tmW0001 = {"T":"W","O":"A","DE":"|W|W0001|Das Rechteck wird nicht gezeichnet, da Fläche zu gering"}
 	:let g:tmW0001["EN"] = "|W|W0001|The rectangle is not drawn because the area is too small"
@@ -146,17 +171,7 @@
 	:let g:tmI0007["EN"] = "|I|I0007|Every unit has only one parent"
 :endf
 
-" go to a special tab(page)
-":function! treemap#gotoTab(nr)
-"	:tabfirst
-"	:let i = 0
-"	:for i in range (0,a:nr-2)
-"		:tabnext
-"		" :echo i
-"	:endfor
-"	:unlet i
-":endf
-
+" Object Rectangle {{{1
 " returns an object of type rectangle
 :function! treemap#rectangle (posx,posy,lenx,leny)
 	:let rec = {}
@@ -164,6 +179,227 @@
 	" Daten aus Objekt rec holen
 	" :let positionx = get(rec,'x')
 	:return rec
+:endf
+
+" Read & Check Input Data {{{1
+" data are read out of the window and return the values as a double list
+" (matrix)
+:function! treemap#readScreen(separator,area)
+	
+	:let notes = []
+	:let err = 0
+  
+  :if a:area == 'block'  "input data are from a visual block
+    :execute 'normal gv"ay'
+    :let buffer = split(@a,"\n")
+    " insert first line (headline)
+    :let tmTemp = split(buffer[0],"\t")
+    :let tmHeadline = ""
+    :let tmI = 0
+    :for item in tmTemp
+      :let tmI += 1
+      :let tmHeadline = tmHeadline."Head"
+      :if tmI < len(tmTemp)
+        :let tmHeadline = tmHeadline."\t"
+      :endif
+    :endfor
+    :call insert(buffer,tmHeadline,0)
+  :else  " a:area == file
+    :let buffer = getline(1,line("$"))
+  :endif
+
+  :let screen = []
+	:let i = 0
+	:for i in range(0,len(buffer)-1)
+		
+		:call add(screen,split(buffer[i],a:separator))
+
+	:endfor
+	:unlet i
+	:unlet buffer
+	
+	:call treemap#checkInput(screen)
+
+	:if (err == 0)
+		:call add(notes,[g:tmI0002,""])
+		
+		:if g:tmVal2Active == "true"
+			:call treemap#calculateVal2Average(screen)
+		:endif
+	:endif
+
+	:call treemap#printMessage(notes)
+
+	:if (err == 1)
+		:call treemap#interruptRun(err)
+	:endif
+	
+	:call treemap#fillMessage(notes)
+		
+	:unlet notes
+	:unlet err
+	
+	:return screen
+
+:endf
+
+" calculate the average value of all val2 values and set global variable g:tmVal2Average
+:function! treemap#calculateVal2Average(screen)
+
+	:let sum = 0.00
+	
+	:let i = 0
+	:for item in a:screen
+		:if i == 0
+			:let i += 1
+		:else
+			:let sum += item[len(item)-1]
+		:endif
+	:endfor
+		
+	:let g:tmVal2Average = sum / (len(a:screen)-1)
+	
+	:unlet sum
+
+:endf
+
+" checks about the read data of the screen
+:function! treemap#checkInput(screen)
+	:let notes = []
+	:let err = 0
+	:let layerNr = len(a:screen[0])
+	:let err = 0
+
+	:let i = 0
+	:for i in range(0,len(a:screen)-1)
+		
+		:let li = i+1
+
+		" are numbers of elements in every row correct?
+		:try
+			:if len(a:screen[i]) != layerNr
+				:call add(notes,[g:tmE0001,"Zeile: ".li])
+				:let err = 1
+			:endif
+		:catch /^Vim\%((\a\+)\)\=:E/
+			:call add(notes,[g:tmE0001,"Zeile: ".li])
+			:let err = 1
+		:endtry
+
+		" is in all rows the last column a value
+		:try
+			:if !(a:screen[i][layerNr-1] =~ str2nr(a:screen[i][layerNr-1]))
+				:if i > 0
+					:call add(notes,[g:tmE0003,"Zeile: ".li])
+					:let err = 1
+				:endif
+			:endif
+		:catch /^Vim\%((\a\+)\)\=:E/
+			:let err = 1
+		:endtry
+		
+		" is in all rows the column before the last column a value
+		:if a:screen[1][layerNr-2] =~ str2nr(a:screen[i][layerNr-2])
+			
+			:let g:tmVal2Active = "true"
+
+			:try
+				:if !(a:screen[i][layerNr-2] =~ str2nr(a:screen[i][layerNr-2]))
+					:if i > 0
+						:call add(notes,[g:tmE0003,"Zeile: ".li])
+						:let err = 1
+					:endif
+				:endif
+			:catch /^Vim\%((\a\+)\)\=:E/
+				:let err = 1
+			:endtry
+		:endif
+
+		:unlet li
+	:endfor
+	:unlet i
+
+	:call treemap#checkChildParentRelation(a:screen,g:tmVal2Active)
+	
+	:if (err == 0)
+		:call add(notes,[g:tmI0001,""])
+	:endif
+
+	:call treemap#fillMessage(notes)
+	:call treemap#printMessage(notes)
+	:call treemap#interruptRun(err)
+
+	:unlet layerNr
+	:unlet err
+	
+	:return notes
+	
+:endf
+
+:function! treemap#checkChildParentRelation(matrix,val2Active)
+	
+	:let notes = []
+	:let err = 0
+
+	:if a:val2Active == "false"
+		:let layerNr = len(a:matrix[0])-1
+	:else
+		:let layerNr = len(a:matrix[0])-2
+	:endif
+
+	:if layerNr > 1
+
+		:let i = 1
+		:for i in range(1,layerNr-1)
+	
+			:let column = layerNr-i	
+
+			:let a = 0 
+			:for item in a:matrix
+			
+				:if a == 0
+					:let a = 1
+					:continue
+				:endif
+
+				:let checkUnit = item[column]
+				:let checkParent = item[column-1]
+			
+				:let b = 0
+				:for unit in a:matrix
+					:if b == 0
+						:let b = 1
+						:continue
+					:endif
+				
+					:if unit[column] == checkUnit
+						:if unit[column-1] != checkParent
+							:let err = 1
+							:call add(notes,[g:tmE0005,checkUnit." - ".checkParent])
+						:endif
+					:endif
+
+				:endfor
+				:unlet b
+
+
+			
+			:endfor
+			:unlet a
+
+			:let i += 1
+		:endfor
+		:unlet i
+
+	:endif
+	
+	:if err == 0
+		:call add(notes,[g:tmI0007,""])
+	:endif
+
+	:call treemap#fillMessage(notes)
+	:call treemap#printMessage(notes)
+	:call treemap#interruptRun(err)
 :endf
 
 " units list: entries are dictioniaries: layer, description, value, sum
@@ -340,6 +576,7 @@
 	
 :endf
 
+" Functions Utilities {{{1
 :function! treemap#getAllParentsPerLayer(hierachy,layerNr)
 
 	:let parents = []
@@ -407,207 +644,7 @@
 	:return parents
 :endf
 
-" data are read out of the window and return the values as a double list
-" (matrix)
-:function! treemap#readScreen(separator)
-	
-	:let notes = []
-	:let err = 0
 
-	:let buffer = getline(1,line("$"))
-	:let screen = []
-	:let i = 0
-	:for i in range(0,len(buffer)-1)
-		
-		:call add(screen,split(buffer[i],a:separator))
-
-	:endfor
-	:unlet i
-	:unlet buffer
-	
-	:call treemap#checkInput(screen)
-
-	:if (err == 0)
-		:call add(notes,[g:tmI0002,""])
-		
-		:if g:tmVal2Active == "true"
-			:call treemap#calculateVal2Average(screen)
-		:endif
-	:endif
-
-	:call treemap#printMessage(notes)
-
-	:if (err == 1)
-		:call treemap#interruptRun(err)
-	:endif
-	
-	:call treemap#fillMessage(notes)
-		
-	:unlet notes
-	:unlet err
-	
-	:return screen
-
-:endf
-
-" calculate the average value of all val2 values and set global variable g:tmVal2Average
-:function! treemap#calculateVal2Average(screen)
-
-	:let sum = 0.00
-	
-	:let i = 0
-	:for item in a:screen
-		:if i == 0
-			:let i += 1
-		:else
-			:let sum += item[len(item)-1]
-		:endif
-	:endfor
-		
-	:let g:tmVal2Average = sum / (len(a:screen)-1)
-	
-	:unlet sum
-
-:endf
-
-" checks about the read data of the screen
-:function! treemap#checkInput(screen)
-	:let notes = []
-	:let err = 0
-	:let layerNr = len(a:screen[0])
-	:let err = 0
-
-	:let i = 0
-	:for i in range(0,len(a:screen)-1)
-		
-		:let li = i+1
-
-		" are numbers of elements in every row correct?
-		:try
-			:if len(a:screen[i]) != layerNr
-				:call add(notes,[g:tmE0001,"Zeile: ".li])
-				:let err = 1
-			:endif
-		:catch /^Vim\%((\a\+)\)\=:E/
-			:call add(notes,[g:tmE0001,"Zeile: ".li])
-			:let err = 1
-		:endtry
-
-		" is in all rows the last column a value
-		:try
-			:if !(a:screen[i][layerNr-1] =~ str2nr(a:screen[i][layerNr-1]))
-				:if i > 0
-					:call add(notes,[g:tmE0003,"Zeile: ".li])
-					:let err = 1
-				:endif
-			:endif
-		:catch /^Vim\%((\a\+)\)\=:E/
-			:let err = 1
-		:endtry
-		
-		" is in all rows the column befor the last column a value
-		:if a:screen[1][layerNr-2] =~ str2nr(a:screen[i][layerNr-2])
-			
-			:let g:tmVal2Active = "true"
-
-			:try
-				:if !(a:screen[i][layerNr-2] =~ str2nr(a:screen[i][layerNr-2]))
-					:if i > 0
-						:call add(notes,[g:tmE0003,"Zeile: ".li])
-						:let err = 1
-					:endif
-				:endif
-			:catch /^Vim\%((\a\+)\)\=:E/
-				:let err = 1
-			:endtry
-		:endif
-
-		:unlet li
-	:endfor
-	:unlet i
-
-	:call treemap#checkChildParentRelation(a:screen,g:tmVal2Active)
-	
-	:if (err == 0)
-		:call add(notes,[g:tmI0001,""])
-	:endif
-
-	:call treemap#fillMessage(notes)
-	:call treemap#printMessage(notes)
-	:call treemap#interruptRun(err)
-
-	:unlet layerNr
-	:unlet err
-	
-	:return notes
-	
-:endf
-
-:function! treemap#checkChildParentRelation(matrix,val2Active)
-	
-	:let notes = []
-	:let err = 0
-
-	:if a:val2Active == "false"
-		:let layerNr = len(a:matrix[0])-1
-	:else
-		:let layerNr = len(a:matrix[0])-2
-	:endif
-
-	:if layerNr > 1
-
-		:let i = 1
-		:for i in range(1,layerNr-1)
-	
-			:let column = layerNr-i	
-
-			:let a = 0 
-			:for item in a:matrix
-			
-				:if a == 0
-					:let a = 1
-					:continue
-				:endif
-
-				:let checkUnit = item[column]
-				:let checkParent = item[column-1]
-			
-				:let b = 0
-				:for unit in a:matrix
-					:if b == 0
-						:let b = 1
-						:continue
-					:endif
-				
-					:if unit[column] == checkUnit
-						:if unit[column-1] != checkParent
-							:let err = 1
-							:call add(notes,[g:tmE0005,checkUnit." - ".checkParent])
-						:endif
-					:endif
-
-				:endfor
-				:unlet b
-
-
-			
-			:endfor
-			:unlet a
-
-			:let i += 1
-		:endfor
-		:unlet i
-
-	:endif
-	
-	:if err == 0
-		:call add(notes,[g:tmI0007,""])
-	:endif
-
-	:call treemap#fillMessage(notes)
-	:call treemap#printMessage(notes)
-	:call treemap#interruptRun(err)
-:endf
 
 " break run when an error occur
 :function! treemap#interruptRun(err)
@@ -697,7 +734,7 @@
 	:return outputAll
 :endf
 
-"calculate sum the element of a layer X
+" calculate sum the element of a layer X
 :function! treemap#calculateSum(element,matrix,column)
 
 	:if g:tmVal2Active == 'true'
@@ -746,7 +783,7 @@
 
 		:let prop = a:hierachy[i].sum * 100 / sum
 		:let a:hierachy[i]["prop"] = prop
-		:let pt = g:pt * prop / 100
+		:let pt = g:tmPt * prop / 100
 		:let a:hierachy[i]["pt"] = pt
 
 		:unlet prop
@@ -759,9 +796,7 @@
 	:endif
 
 	:call treemap#fillMessage(notes)
-
 	:call treemap#printMessage(notes)
-	
 	:call treemap#interruptRun(err)
 
 	:unlet err
@@ -780,22 +815,95 @@
 
 :endf
 
-" draw frame
-:function! treemap#drawFrame()
+" determine the number of layers
+:function! treemap#getLayerNr(hierachy)
+
+	:if g:tmLNr == 0	
+
+		:let max = 0
+
+		:for item in a:hierachy
+			:if item.layer > max
+				:let max = item.layer
+			:endif
+		:endfor
+
+		:let g:tmLNr = max+1
+	
+	:endif
+	
+	:return g:tmLNr
+
+:endf
+
+" determine the layer number of a special entry
+:function! treemap#getLayerNrDesc(desc,hierachy)
+
+	:let layer = -1
+
+	:for item in a:hierachy
+		:if item.desc == a:desc
+			:let layer = item.layer
+			:break
+		:endif
+	:endfor
+
+	:call add(g:tmLayNrs,a:desc.': '.layer)
+	:return layer
+:endf
+
+" Print all messages from g:tmMess
+:function! treemap#printAllMessages(messages,lang)
+	
+	:if a:lang == 'DE' || a:lang == 'EN'
+		:tabnew
+		:let i = 0
+		:for item in a:messages
+			:let i+= 1
+			:call setline(i,item[0][a:lang].' / '.item[1])
+		:endfor
+		:unlet i
+	:else
+		:echo 'Die Sprache '.a:lang.' ist nicht gepflegt!'
+	:endif
+
+:endf
+
+" open the treemap in a browser and save it if not done before
+":function! treemap#openSVG()
+
+"  :let tmFileName = expand(@%)
+"  :if tmFileName == ""
+"    :if exists("*mkdir")
+"      :call mkdir($HOME . "\treemaps", "p","")
+"    :endif
+"    :execute 'normal w '.$home.'treemaps\treemap.htm'
+"    :let tmFileName = expand(@%)
+"  :endif
+
+"  :let tmFileName = substitute(tmFileName,"\\","\/","g")
+
+"  :execute 'silent ! start "Title" /b file:///'.tmFileName
+
+":endf
+
+" Print Treemap {{{1
+" Draw Frame
+:function! treemap#drawFrame(column,line)
 	
 	:let notes = []
 	:let err = 0	
 
 	:if (g:tmX > 1) && (g:tmY > 1)
 
-		:call setpos(".",[0,1,1,0])
+		:call setpos(".",[0,a:line,1,0])
 
 		:let a = 0
 		:for a in range (0,g:tmY+1)
 			:execute "normal i\<ENTER>\<ESC>"
 			:execute "normal k"	
 			:let i = 0
-			:for i in range (0,g:tmX+1)
+			:for i in range (0,g:tmX+1+a:column)
 				:execute "normal i \<ESC>" 
 			:endfor
 			:unlet i
@@ -803,7 +911,7 @@
 		:endfor
 		:unlet a
 	
-		:let frame = treemap#rectangle(1,1,g:tmX,g:tmY)
+		:let frame = treemap#rectangle(a:column,a:line,g:tmX,g:tmY)
 		:let frame.title = 'FRAME'
 	
 		:call treemap#drawRectangle(frame)
@@ -817,9 +925,7 @@
 	:endif
 
 	:call treemap#fillMessage(notes)
-
 	:call treemap#printMessage(notes)
-	
 	:call treemap#interruptRun(err)
 
 	:unlet err
@@ -904,9 +1010,7 @@
 	:endif
 
 	:call treemap#fillMessage(notes)
-
 	:call treemap#printMessage(notes)
-	
 	:call treemap#interruptRun(err)
 
 	:unlet err
@@ -914,6 +1018,51 @@
 
 :endf
 
+" SVG Output
+:function! treemap#drawRectanglesSVG(rectangles)
+
+	" HTML part 1	
+	:call setline(1,'<?xml version="1.0" encoding="ISO-8859-1"?>')
+	:call setline(2,'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de">')
+	:call setline(3,'<head>')
+	:call setline(4,'<title>'.g:tmTitle.'</title>')
+	:call setline(5,'</head>')
+	:call setline(6,'<body>')
+	:call setline(7,'<h1>'.g:tmTitle.'</h1>')
+
+	" SVG
+	":call setline(8,'<?xml version="1.0" encoding="ISO-8859-1" standalone="no" ?>')
+	":call setline(9,'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">')
+	:call setline(8,'<svg width="'.g:tmX.'" height="'.g:tmY.'" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">')
+	:call setline(9,'<title>'.g:tmTitle.'</title>')
+	:call setline(10,'<desc>powered by TREEMAP VIM PLUGIN</desc>')
+	
+	:let i = 11
+	:for item in a:rectangles
+		:if (item.lx > 1) && (item.ly > 1)
+			:call setline(i,'<rect x="'.item.x.'" y="'.item.y.'" width="'.item.lx.'" height="'.item.ly.'" fill="'.item.fill.'" stroke="black" />')
+			:let i+= 1
+			:let p1 = item.x+10
+			:let p2 = item.y+20
+			:call setline(i,'<text x="'.p1.'" y="'.p2.'" fill="black">'.item.title.'</text>')
+			:unlet p1
+			:unlet p2
+			:let i+= 1
+		:endif
+
+	:endfor
+
+	:call setline(i,'</svg>')
+
+	" HTML part 2
+	:call setline(i+1,'</body>')
+	:call setline(i+2,'</html>')
+
+	:unlet i
+	
+:endf
+
+" Main Function {{{1
 " main function to run the treemap algorithm
 :function! treemap#main(output,separator)
 	
@@ -927,10 +1076,10 @@
 			:let g:tmX = g:tmUx
 			:let g:tmY = g:tmUy
 		:else
-			:let g:tmX = 230
-			:let g:tmY = 65
+			:let g:tmX = 70
+			:let g:tmY = 25
 		:endif
-		:let g:pt = g:tmX * g:tmY
+		:let g:tmPt = g:tmX * g:tmY
 	:endif
 
 	" Output = SVG / set frame variables
@@ -942,10 +1091,10 @@
 			:let g:tmX = 1024
 			:let g:tmY = 768
 		:endif
-		:let g:pt = g:tmX * g:tmY
+		:let g:tmPt = g:tmX * g:tmY
 	:endif
 	
-	:let screen = treemap#readScreen(a:separator)
+	:let screen = treemap#readScreen(a:separator,"file")
 	:let hier = treemap#createHierachy(screen)
 	:let nestedHier = treemap#reorgHierachy(hier)
 	:let recs = treemap#sliceAndDice(nestedHier)
@@ -953,11 +1102,8 @@
 
 	" Output = VIM / print rectangles (text)
 	:if a:output == 'VIM'
-		":let g:tmX = 230
-		":let g:tmY = 65
-		":let g:pt = g:tmX * g:tmY
 		
-		:call treemap#drawFrame()
+		:call treemap#drawFrame(1,1)
 		:for item in recs
 			:call treemap#drawRectangle(item)
 		:endfor
@@ -970,15 +1116,97 @@
 
 	" Output = SVG / print rectangles SVG
 	:if a:output == 'SVG'
-		":let g:tmX = 1024
-		":let g:tmY = 768
-		":let g:pt = g:tmX * g:tmY
-		
 		:call treemap#drawRectanglesSVG(recs)
 	:endif
 
 :endf
 
+" Only create the rectangles of a treemap, but don't print it
+:function! treemap#create(separator)
+	
+  "set width and height
+  :if exists("g:tmUx") && exists("g:tmUy")
+		:let g:tmX = g:tmUx
+		:let g:tmY = g:tmUy
+	:else
+		:let g:tmX = 70
+		:let g:tmY = 25
+	:endif
+	:let g:tmPt = g:tmX * g:tmY
+
+  :call treemap#initialize()
+
+  :let notes = []
+  :let err = 0
+
+  " check if a visual-block is active
+  :if char2nr(visualmode()) != 22 && visualmode() != 'v'
+    :call add(notes,[g:tmE0006,""])
+    :let err = 1
+    :call treemap#fillMessage(notes)
+	  :call treemap#printMessage(notes)
+  	:call treemap#interruptRun(err)
+  :endif
+
+  :let screen = treemap#readScreen(a:separator,"block")
+	:let hier = treemap#createHierachy(screen)
+	:let nestedHier = treemap#reorgHierachy(hier)
+	:let recs = treemap#sliceAndDice(nestedHier)
+	
+  " Save the calculated rectangles to the clipboard
+  :let g:tmClipboard = recs
+  :let g:tmClipSize = {'x':g:tmX,'y':g:tmY}
+
+:endf
+
+" draw the treemap at the position of your cursor
+:function! treemap#draw(output)
+
+  :let notes = []
+  :let err = 0
+
+  :call treemap#initialize()
+
+  :if empty(g:tmClipboard) || empty(g:tmClipSize)
+    :call add(notes,[g:tmE0007,""])
+    :let err = 1
+    :call treemap#fillMessage(notes)
+	  :call treemap#printMessage(notes)
+  	:call treemap#interruptRun(err)
+  :endif
+
+  :let s:tmRecs = []
+
+  " read width and height from g:tmClipSize
+  :let g:tmX = g:tmClipSize.x
+  :let g:tmY = g:tmClipSize.y
+  :let s:tmRecs = deepcopy(g:tmClipboard)
+
+  " Output = VIM / print rectangles (text)
+	:if a:output == 'VIM'
+	
+    :let s:tmPos = getpos(".")
+    :let s:lnum = s:tmPos[1]
+    :let s:col = s:tmPos[2]
+
+		:call treemap#drawFrame(s:col,s:lnum)
+		:for item in s:tmRecs
+      :let item.x = item.x + s:col-1
+      :let item.y = item.y + s:lnum-1
+			:call treemap#drawRectangle(item)
+		:endfor
+
+	:endif
+
+	" Output = SVG / print rectangles SVG
+	:if a:output == 'SVG'
+    :tabnew
+		:call treemap#drawRectanglesSVG(g:tmClipboard)
+	:endif
+
+:endf
+
+" Calculate the Rectangles {{{1
 " Treemap algorithm Slice and Dice
 :function! treemap#sliceAndDice(hierachy)
 	
@@ -1195,6 +1423,7 @@
 	:return resultList
 :endf
 
+" Colorization
 :function! treemap#getColor(val2,rootLayer,childLayer)
 
 	:let fillColor = ''
@@ -1226,103 +1455,4 @@
 
 	:return fillColor
 
-:endf
-
-" determine the number of layers
-:function! treemap#getLayerNr(hierachy)
-
-	:if g:tmLNr == 0	
-
-		:let max = 0
-
-		:for item in a:hierachy
-			:if item.layer > max
-				:let max = item.layer
-			:endif
-		:endfor
-
-		:let g:tmLNr = max+1
-	
-	:endif
-	
-	:return g:tmLNr
-
-:endf
-
-:let g:layNrs = []
-" determine the layer number of a special entry
-:function! treemap#getLayerNrDesc(desc,hierachy)
-
-	:let layer = -1
-
-	:for item in a:hierachy
-		:if item.desc == a:desc
-			:let layer = item.layer
-			:break
-		:endif
-	:endfor
-
-	:call add(g:layNrs,a:desc.': '.layer)
-	:return layer
-:endf
-
-" Print all messages from g:tmMess
-function! treemap#printAllMessages(messages,lang)
-	
-	:if a:lang == 'DE' || a:lang == 'EN'
-		:tabnew
-		:let i = 0
-		:for item in a:messages
-			:let i+= 1
-			:call setline(i,item[0][a:lang].' / '.item[1])
-		:endfor
-		:unlet i
-	:else
-		:echo 'Die Sprache '.a:lang.' ist nicht gepflegt!'
-	:endif
-
-:endf
-
-" SVG Output
-:function! treemap#drawRectanglesSVG(rectangles)
-
-	" HTML part 1	
-	:call setline(1,'<?xml version="1.0" encoding="ISO-8859-1"?>')
-	:call setline(2,'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de">')
-	:call setline(3,'<head>')
-	:call setline(4,'<title>'.g:tmTitle.'</title>')
-	:call setline(5,'</head>')
-	:call setline(6,'<body>')
-	:call setline(7,'<h1>'.g:tmTitle.'</h1>')
-
-	" SVG
-	":call setline(8,'<?xml version="1.0" encoding="ISO-8859-1" standalone="no" ?>')
-	":call setline(9,'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">')
-	:call setline(8,'<svg width="'.g:tmX.'" height="'.g:tmY.'" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">')
-	:call setline(9,'<title>'.g:tmTitle.'</title>')
-	:call setline(10,'<desc>powered by TREEMAP VIM PLUGIN</desc>')
-	
-	:let i = 11
-	:for item in a:rectangles
-		:if (item.lx > 1) && (item.ly > 1)
-			:call setline(i,'<rect x="'.item.x.'" y="'.item.y.'" width="'.item.lx.'" height="'.item.ly.'" fill="'.item.fill.'" stroke="black" />')
-			:let i+= 1
-			:let p1 = item.x+10
-			:let p2 = item.y+20
-			:call setline(i,'<text x="'.p1.'" y="'.p2.'" fill="black">'.item.title.'</text>')
-			:unlet p1
-			:unlet p2
-			:let i+= 1
-		:endif
-
-	:endfor
-
-	:call setline(i,'</svg>')
-
-	" HTML part 2
-	:call setline(i+1,'</body>')
-	:call setline(i+2,'</html>')
-
-	:unlet i
-	
 :endf
