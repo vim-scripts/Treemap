@@ -1,11 +1,14 @@
 "  vim:tabstop=2:shiftwidth=2:expandtab:foldmethod=marker:textwidth=79
 "  treemap.vim: (plugin) Creates a treemap in a new tab
-"  Last Change: Thu Apr 30 7:45 PM 2015 MET
+"  Last Change: Sun May 03 7:45 PM 2015 MET
 "  Author:	    Data-Statiker
 "  Maintainer:  Data-Statiker
-"  Version:     0.9.2, for Vim 7.4+
+"  Version:     0.9.2.1, for Vim 7.4+
 
 "  New: {{{1
+"  Version 0.9.21
+"  *  Bugfix TmCreate with other separators than "\t" (tab)
+"
 "  Version 0.9.2:
 "  *	New Commands TmCreate and TmDraw
 "     To seperate the calculating and drawing of treemap
@@ -193,20 +196,26 @@
     :execute 'normal gv"ay'
     :let buffer = split(@a,"\n")
     " insert first line (headline)
-    :let tmTemp = split(buffer[0],"\t")
+    :let tmTemp = split(buffer[0],a:separator)
     :let tmHeadline = ""
     :let tmI = 0
     :for item in tmTemp
       :let tmI += 1
       :let tmHeadline = tmHeadline."Head"
       :if tmI < len(tmTemp)
-        :let tmHeadline = tmHeadline."\t"
+        :if g:tmSeparator == "\\t"
+          :let tmHeadline = tmHeadline."\t"   
+        :else
+          :let tmHeadline = tmHeadline.a:separator
+        :endif
       :endif
     :endfor
     :call insert(buffer,tmHeadline,0)
   :else  " a:area == file
     :let buffer = getline(1,line("$"))
   :endif
+  
+  :let g:tmBuffer = deepcopy(buffer)
 
   :let screen = []
 	:let i = 0
