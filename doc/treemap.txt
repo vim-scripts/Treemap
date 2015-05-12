@@ -1,5 +1,5 @@
 " vim: filetype=help foldmethod=marker foldmarker=<<<,>>> nomodifiable readonly
-*treemap.txt*	For Vim version 7.4.  Last change: 2015 May 01
+*treemap.txt*	For Vim version 7.4.  Last change: 2015 May 12
 
 
                 	  VIM REFERENCE MANUAL 
@@ -7,7 +7,7 @@
                            Data Statiker
 
 	  	Treemap extension plugin (treemap.vim) manual
-	  	treemap.vim version 0.9.2.1
+	  	treemap.vim version 1.0
 
 For instructions on installing this file, type
 	:help add-local-help
@@ -45,28 +45,35 @@ Homepage: https://github.com/Data-Statiker/VIM-TREEMAP
 With the treemap extension plugin for vim you can create treemaps with the
 output in a textfile or an imbedded SVG HTML file.
 
+See screenshots at GITHUB:
+- Input File:             https://github.com/Data-Statiker/VIM-TREEMAP/blob/master/screenshots/inputFile.png
+- Treemap Output VIM:     https://github.com/Data-Statiker/VIM-TREEMAP/blob/master/screenshots/treemapOutputVIM.png
+- Treemap Output SVG:     https://github.com/Data-Statiker/VIM-TREEMAP/blob/master/screenshots/trremapOutputSVG.png
+- Treemap SVG in Browser: https://github.com/Data-Statiker/VIM-TREEMAP/blob/master/screenshots/treemapOpenSVG.png
+
+
 First install the plugin: |treemap-install|
 
 To start the treemap creation:
 - load the inputfile
 - set the separator (;|,|\t|...) in the menu Plugin->Treemap->Separator
-  or with the VIM Command :TmSeparator (<leader>tr)
+  or with the VIM Command :TmSeparator
 - set the output type 'VIM' or 'SVG' in the menu Plugin->Treemap->Output Type
   or with the VIM Command :TmOutput
 - Run the treemap script in the menu Plugin->Treemap->Run    
-  or with the VIM Command :TmRun
+  or with the VIM Command :TmRun    (<leader>tr) 
   OR
   call the main function: call treemap#main(output,separator)
   for example: - call treemap#main('VIM','\t')
                - call treemap#main(g:tmOutput,g:tmSeparator)
 
-   +-----------------------------------------------------------+ 
-   | Note:                                                     |
-   | Set tho option wrap to 'nowrap'                           |
-   |   :set nowrap!                                            |
-   | Otherwise the treemap is displayed wrong. You can set this|
-   | option also after drawing the treemap!                    |
-   +-----------------------------------------------------------+
+  +-----------------------------------------------------------+ 
+  | Note:                                                     |
+  | Set tho option wrap to 'nowrap'                           |
+  |   :set nowrap!                                            |
+  | Otherwise the treemap is displayed wrong (VIM Output Mode)|
+  | You can set this option also after drawing the treemap!   |
+  +-----------------------------------------------------------+
 
   +--------------------------------------------------------------+
   | Note:                                                        |
@@ -80,6 +87,15 @@ Use commands |TmCreate| and |TmDraw| instead of |TmRun|.
 
 ==============================================================================
 2.  Whats New						*treemap-new*
+
+Version 1.0:
+*       New command TmOpen (Mapping <leader>to)
+        This command opens a generated SVG/HTML treemap in a 
+        web browser
+*       Bugfix: Replace $lang with $LANG for compatibility with
+        older VIM versions
+*       New command TmClear to delete all generated files from TmOpen
+        in the $HOME/treemaps/ directory
 
 Version 0.9.2.1:
 *       Bugfix TmCreate with other separators than "\t" (tab)
@@ -235,8 +251,8 @@ directly:
 Other paramters:
 
 You can change the size of the treemap with the following variables:
-- g:tmUx - width                               // example: :let g:tmUx = 230
-- g:tmUy - height                              // example: :let g:tmUy = 65
+- g:tmUx - width                         // example: :let g:tmUx = 230
+- g:tmUy - height                        // example: :let g:tmUy = 65
 To do that you can use the menu "Plugin"->"Treemap"->"Size"
 or the Vim Commands :TmWidth and :TmHeight
 
@@ -245,12 +261,12 @@ VIM:  70 * 25
 SVG: 1024 * 768
 
 
-The title of a treemap can defined in the menu or Command:
+The title of a treemap can be defined in the menu or Command:
    Menu:    Plugin->Treemap->Title g:tmTitle (|treemap-menu|)
    Command: |TmTitle|
 
-After executing this menu point youn can insert the name of your Treemap in a
-input popup.
+After executing this menu point youn can insert the name of your
+Treemap in a input popup.
 
 You can also set the variable g:tmTitle directly:
    :let g:tmTitle = "MyTreemapName"
@@ -425,7 +441,8 @@ To activate the helpfile in VIM type in command mode:
                at the position of your cursor
                Don't change this variable.
         global variable: g:tmClipSize
-               Default value: {'x':70,'y':25}
+               Default value "VIM": {'x':70,'y':25}
+               Default value "SVG": {'x':1024,'y':768}
                Are the rectangles created with the command |TmCreate| the
                width and height of the generated treemap is saved in this
                dictionary variable {'x':'width','y':'height'}.
@@ -475,7 +492,7 @@ The rectangles are not drawn anywhere.
 
      +-------------------------------------------------------------+
      |Note:                                                        |
-     |You start the visual mode with: 'v'
+     |You start the visual mode with: 'v'                          |
      |You start the visual block mode with:                        |
      |<Ctrl-V> Linux                                               |
      |<Ctrl-Q> Windows                                             |
@@ -492,6 +509,23 @@ with the variable g:tmOutput
 
 The rectangles that are saved in the tmClipboard are drawn at the
 current position of your cursor.
+
+-----------------------------------------------------------------------------
+
+Plugin->Treemap->Open SVG
+Open the generated SVG/HTML treemap in your web browser.
+For that the file has to be saved. If it isn't saved yet, the treemap
+plugin will save it in the subdirectory 'treemaps" of your home
+directory ($HOME). The file name is 'treemap_<Nr>.htm'.
+If the subdirectory doesn't exist, you will be asked by the first
+saving if you agree that the plugin creates the folder.
+
+-----------------------------------------------------------------------------
+
+Plugin->Treemap->Clear directory
+Delete all generated treemap<Nr>.htm files. This files were created
+by running TmOpen. The files are deleted in the directory:
+  $HOME/treemaps/
 
 -----------------------------------------------------------------------------
 
@@ -806,10 +840,11 @@ Informations:
 	      Def: Every unit has only one parent. The error |E0005| did not
                    occur.
 
-All messages of a treemap generation run are savesd in the global variable
+All messages of a treemap generation run are saved in the global variable
 g:tmMess. You can create a log file. To do that read:
 |treemap-configure-other|
 |treemap-menu| - Plugin->Treemap->Log g:tmMess
+|TmLog| - the vim command to open the logs
 
 ==============================================================================
 10. Commands						*treemap-commands*
@@ -872,11 +907,28 @@ The rectangles that are saved in the tmClipboard are drawn at the
 current position of your cursor.
 
 -----------------------------------------------------------------------------
+								*TmOpen*
+Command: TmOpen
+Open the generated SVG/HTML treemap in your web browser.
+For that the file has to be saved. If it isn't saved yet, the treemap
+plugin will save it in the subdirectory 'treemaps" of your home
+directory ($HOME). The file name is 'treemap<Nr>.htm'.
+If the subdirectory doesn't exist, you will be asked by the first
+saving if you agree that the plugin creates the folder.
+
+-----------------------------------------------------------------------------
+								*TmClear*
+Command: TmClear
+Delete all generated treemap<Nr>.htm files. This files were created
+by running TmOpen. The files are deleted in the directory:
+  $HOME/treemaps/
+
+-----------------------------------------------------------------------------
 								*TmLog*
 Command: TmLog
 Create a log file.
 Print the messages of the variable g:tmMess in a new tab.
-It calls the function treemap#drawAllMessages(g:tmMess,$lang)
+It calls the function treemap#drawAllMessages(g:tmMess,$LANG)
 
 -----------------------------------------------------------------------------
 								*TmColor*
@@ -937,7 +989,8 @@ For the following menu entries / VIM Commands there exists a Mapping:
 *******************************
 |  <leader>tr  |  |TmRun|       |
 |  <leader>tc  |  |TmCreate|    |
-|  <leader>td  |  |TmDraw|     |
+|  <leader>td  |  |TmDraw|      |
+|  <leader>to  |  |TmOpen|      |
 |  <leader>tl  |  |TmLog|       |
 
 The <leader> is the sign of the variable mapleader. If this variable is

@@ -8,8 +8,12 @@
 :menu Plugin.&Treemap.&Create<tab>create()  :call treemap#create(g:tmSeparator)<CR>
 :menu Plugin.&Treemap.&Draw<tab>draw()  :call treemap#draw(g:tmOutput)<CR>
 
+" Open a SCG/HTML treemap in the browser / Delete Files in treemap directory
+:menu Plugin.&Treemap.&Open<tab>SVG  :call treemap#tmOpenSVG()<CR>
+:menu Plugin.&Treemap.&Clear<tab>directory  :call treemap#tmClearTreemapDir()<CR>
+
 " Print log variable g:tmMess
-:menu Plugin.&Treemap.&Log<tab>g:tmMess  :call treemap#printAllMessages(g:tmMess,$lang)<CR>
+:menu Plugin.&Treemap.&Log<tab>g:tmMess  :call treemap#printAllMessages(g:tmMess,$LANG)<CR>
 
 " Title
 :menu Plugin.&Treemap.&Title<tab>g:tmTitle  :let g:tmTitle = inputdialog("Title:","Treemap","Treemap")<CR>
@@ -46,8 +50,12 @@
       \ call treemap#create(g:tmSeparator)
 :command! -count=1 TmDraw
       \ call treemap#draw(g:tmOutput)
+:command! -count=1 TmOpen
+      \ call treemap#tmOpenSVG()
+:command! -count=1 TmClear
+      \ call treemap#tmClearTreemapDir()
 :command! -count=1 TmLog
-      \ call treemap#printAllMessages(g:tmMess,$lang)
+      \ call treemap#printAllMessages(g:tmMess,$LANG)
 :command! -count=1 TmTitle
       \ let g:tmTitle =  input("Title: ","Treemap")
 :command! -count=1 TmColor
@@ -58,7 +66,7 @@
 :command! -count=1 TmSeparator
       \ let g:tmSeparator =  input("Separator: ","\\t")
 :command! -count=1 TmOutput
-      \ let g:tmOutput =  input("Output Type: ","VIM")
+      \ let g:tmOutput =  input("Output Type [VIM/SVG]: ","VIM")
 :command! -count=1 TmWidth
       \ let g:tmUx=  input("Width: ","70")
 :command! -count=1 TmHeight
@@ -68,4 +76,5 @@
 :map <Leader>tr  :TmRun<Esc>
 :map <Leader>tc  :TmCreate<Esc>
 :map <Leader>td  :TmDraw<Esc>
+:map <Leader>to  :TmOpen<Esc>
 :map <Leader>tl  :TmLog<Esc>

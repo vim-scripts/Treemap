@@ -1,12 +1,20 @@
 "  vim:tabstop=2:shiftwidth=2:expandtab:foldmethod=marker:textwidth=79
 "  treemap.vim: (plugin) Creates a treemap in a new tab
-"  Last Change: Sun May 03 7:45 PM 2015 MET
-"  Author:	    Data-Statiker
+"  Last Change: Tue May 12 10:45 PM 2015 MET
+"  Author:      Data-Statiker
 "  Maintainer:  Data-Statiker
-"  Version:     0.9.2.1, for Vim 7.4+
+"  Version:     1.0, for Vim 7.4+
 
 "  New: {{{1
-"  Version 0.9.21
+"  Version 1.0:
+"  * New command TmOpen (Mapping <leader>to)
+"    This command opens a generated SVG/HTML treemap in a web browser
+"  * Bugfix: Replace $lang with $LANG for compatibility with older VIM
+"    versions
+"  * New command TmClear to delete all generated files from TmOpen in
+"    the $HOME/treemaps/ directory
+"
+"  Version 0.9.2.1:
 "  *  Bugfix TmCreate with other separators than "\t" (tab)
 "
 "  Version 0.9.2:
@@ -215,8 +223,6 @@
     :let buffer = getline(1,line("$"))
   :endif
   
-  :let g:tmBuffer = deepcopy(buffer)
-
   :let screen = []
 	:let i = 0
 	:for i in range(0,len(buffer)-1)
@@ -664,7 +670,7 @@
 		:call treemap#fillMessage(notes)
 		:call treemap#printMessage(notes)
 		:let g:tmErr = 1
-		:sleep 10
+		:sleep 5
 		:throw "oops"
 		":exit
 	:endif
@@ -675,11 +681,11 @@
 " print protocol messages
 :function! treemap#printMessage(notes)
 
-	:let language = $lang
+	:let language = $LANG
 	
 	:let i = 0
 	:for i in range(0,len(a:notes)-1)
-		:if language == "DE"
+		:if language == "DE" || language == "de" || strpart(language,0,2) == "DE" || strpart(language,0,2) == "de"
 			:if a:notes[i][0].T == "E"
 				echohl = ErrorMsg | echom a:notes[i][0].DE ." / ". a:notes[i][1] | echohl = None
 			:elseif g:tmVerbose == 1
@@ -863,38 +869,33 @@
 
 " Print all messages from g:tmMess
 :function! treemap#printAllMessages(messages,lang)
-	
-	:if a:lang == 'DE' || a:lang == 'EN'
+
+  :let tmLang = toupper(strpart(a:lang,0,2))
+
+	:if tmLang == 'DE' || tmLang == 'EN'
 		:tabnew
 		:let i = 0
 		:for item in a:messages
-			:let i+= 1
-			:call setline(i,item[0][a:lang].' / '.item[1])
+			:let i += 1
+			:call setline(i,item[0][tmLang].' / '.item[1])
 		:endfor
 		:unlet i
 	:else
-		:echo 'Die Sprache '.a:lang.' ist nicht gepflegt!'
+    :tabnew
+    :let i = 0
+		:for item in a:messages
+			:let i += 1
+			:call setline(i,item[0]['EN'].' / '.item[1])
+		:endfor
+		:unlet i
 	:endif
 
 :endf
 
-" open the treemap in a browser and save it if not done before
-":function! treemap#openSVG()
-
-"  :let tmFileName = expand(@%)
-"  :if tmFileName == ""
-"    :if exists("*mkdir")
-"      :call mkdir($HOME . "\treemaps", "p","")
-"    :endif
-"    :execute 'normal w '.$home.'treemaps\treemap.htm'
-"    :let tmFileName = expand(@%)
-"  :endif
-
-"  :let tmFileName = substitute(tmFileName,"\\","\/","g")
-
-"  :execute 'silent ! start "Title" /b file:///'.tmFileName
-
-":endf
+" Check if this VIM is insatlled on Windows or a LINUX System
+:function! treemap#tmIsWin()
+  :return has("win32") || has("win64") || has("win95") || has("win16")
+:endf
 
 " Print Treemap {{{1
 " Draw Frame
@@ -1071,6 +1072,103 @@
 	
 :endf
 
+" Save and open SVG treemap in a web browser
+:function! treemap#tmOpenSVG()
+  
+  :let tmIsWin = treemap#tmIsWin()
+
+  :if tmIsWin == 1
+    :let tmDirSep = '\'
+  :else
+    :let tmDirSep = '/'
+  :endif
+
+  :if @% == ""
+  
+    :let tmDirName = $HOME.tmDirSep.'treemaps'
+
+    :if isdirectory($HOME.tmDirSep.'treemaps') == 0
+      :let tmCreateDir = input('Create folder '.$HOME.tmDirSep.'treemaps [y/n]:')
+      :if tmCreateDir == "y" || tmCreateDir == "Y"
+        :call mkdir(tmDirName,"p")
+        :let tmFileNr = 1
+      :endif
+    :else
+       :let tmFiles = split(globpath(tmDirName,'*.htm'),'\n')
+       :let i = 0
+       :if !empty(tmFiles)
+         :for i in range(0,len(tmFiles)-1)
+           :let tmPos1 = match(tmFiles[i],"treemap_") + 7
+           :let tmPos2 = match(tmFiles[i],".htm") - tmPos1 - 1
+           :let tmTempFileNr = strpart(tmFiles[i],tmPos1+1,tmPos2) + 1
+           :if !exists('tmFileNr')
+             :let tmFileNr = tmTempFileNr
+           :else
+             :if tmTempFileNr > tmFileNr
+               :let tmFileNr = tmTempFileNr
+             :endif
+           :endif
+           :let i += 1
+         :endfor
+       :else
+         :let tmFileNr = 1
+       :endif
+"      :let tmDeleteFile = $HOME.tmDirSep.'treemaps'.tmDirSep.'treemap.htm'
+"      :let tmDeleteFile = substitute(tmDeleteFile,':\\',':/','g')
+"      :let tmDeleteFile = substitute(tmDeleteFile,'\','/','g')
+"      :let tmIsDeleted = delete(tmDeleteFile)
+    :endif
+      :if isdirectory($HOME.tmDirSep.'treemaps') == 1
+        :let tmFileName = $HOME.tmDirSep.'treemaps'.tmDirSep.'treemap_'.tmFileNr.'.htm'
+        :execute "w! ".tmFileName
+      :endif
+  :else
+    :let tmFileName = expand(@%)
+  :endif
+  :if isdirectory($HOME.tmDirSep.'treemaps') == 1 " && executable(tmFileName)
+      :let tmTempOpenFile = substitute(tmFileName,':\\',':/','g')
+      :let tmOpenFile = substitute(tmTempOpenFile,'\\','/','g')
+      :if treemap#tmIsWin()
+        :execute 'silent ! start "Title" /b "file:///'.tmOpenFile.'"'
+      :else
+        :call system('xdg-open ' . shellescape(tmOpenFile, 1).' &')
+      :endif
+  :endif
+:endf
+
+" Delelete all treemap files in the HOME-Treemaps directory
+:function! treemap#tmClearTreemapDir()
+  
+  :let tmIsWin = treemap#tmIsWin()
+
+  :if tmIsWin == 1
+    :let tmDirSep = '\'
+  :else
+    :let tmDirSep = '/'
+  :endif
+  
+  :let tmDirName = $HOME.tmDirSep.'treemaps'
+  :let tmDirName = substitute(tmDirName,'\\\\','\\','g')
+  :if isdirectory(tmDirName) == 1
+    :let tmFiles = split(globpath(tmDirName,'*.htm'),'\n')
+    :if !empty(tmFiles)
+      :let i = 0
+      :for item in tmFiles
+        :call delete(tmFiles[i])
+        :let i+= 1
+      :endfor
+    :endif
+    :let tmFiles = split(globpath(tmDirName,'*.htm~'),'\n')
+    :if !empty(tmFiles)
+      :let i = 0
+      :for item in tmFiles
+        :call delete(tmFiles[i])
+        :let i+= 1
+      :endfor
+    :endif
+  :endif
+:endf
+
 " Main Function {{{1
 " main function to run the treemap algorithm
 :function! treemap#main(output,separator)
@@ -1134,14 +1232,28 @@
 :function! treemap#create(separator)
 	
   "set width and height
-  :if exists("g:tmUx") && exists("g:tmUy")
-		:let g:tmX = g:tmUx
-		:let g:tmY = g:tmUy
-	:else
-		:let g:tmX = 70
-		:let g:tmY = 25
+  :if g:tmOutput == 'VIM'
+		:if exists("g:tmUx") && exists("g:tmUy")
+			:let g:tmX = g:tmUx
+			:let g:tmY = g:tmUy
+		:else
+			:let g:tmX = 70
+			:let g:tmY = 25
+		:endif
+		:let g:tmPt = g:tmX * g:tmY
 	:endif
-	:let g:tmPt = g:tmX * g:tmY
+
+	" Output = SVG / set frame variables
+	:if g:tmOutput == 'SVG'
+		:if exists("g:tmUx") && exists("g:tmUy")
+			:let g:tmX = g:tmUx
+			:let g:tmY = g:tmUy
+		:else
+			:let g:tmX = 1024
+			:let g:tmY = 768
+		:endif
+		:let g:tmPt = g:tmX * g:tmY
+	:endif
 
   :call treemap#initialize()
 
